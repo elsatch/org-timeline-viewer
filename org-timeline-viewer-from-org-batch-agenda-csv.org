@@ -1,0 +1,139 @@
+#+TITLE: Org Timeline Viewer from Agenda Export
+* Export agenda items as CSV
+As starting point we will generate a view from the agenda, calling emacs in batch mode. This is done using ~org-batch-agenda-csv~ macro.  According to org-agenda.el documentation:
+#+begin_quote
+;;; Commentary:
+
+;; This file contains the code for creating and using the Agenda for Org-mode.
+;;
+;; The functions `org-batch-agenda', `org-batch-agenda-csv', and
+;; `org-batch-store-agenda-views' are implemented as macros to provide
+;; a convenient way for extracting agenda information from the command
+;; line.  The Lisp does not evaluate parameters of a macro call; thus
+;; it is not necessary to quote the parameters passed to one of those
+;; functions.  E.g. you can write:
+;;
+;;   emacs -batch -l ~/.emacs -eval '(org-batch-agenda "a" org-agenda-span 7)'
+;;
+;; To export an agenda spanning 7 days.  If `org-batch-agenda' would
+;; have been implemented as a regular function you'd have to quote the
+;; symbol org-agenda-span.  Moreover: To use a symbol as parameter
+;; value you would have to double quote the symbol.
+;;
+;; This is a hack, but it works even when running Org byte-compiled.
+#+end_quote
+
+So, we pass all parameters unquoted.
+
+__DO NOT EXECUTE THIS CODE, DOESN'T WORK__
+#+begin_src shell :session org-timeline-viewer
+emacs -batch -l ~/.emacs.d/init.el -eval '(after! org (org-batch-agenda-csv "a" org-agenda-span 10 org-agenda-files "./timestamp-test1.org"))' > tmp_agenda.csv
+#+end_src
+
+#+RESULTS:
+|                         |
+| tmp_agenda.csv[?2004l |
+
+This command extracts the to tmp_agenda.csv the items that appear on your org-agenda, when you press letter "a".
+#+begin_src shell :session org-timeline-viewer :results none
+emacs -batch -l ~/.emacs.d/init.el -eval '(org-batch-agenda-csv "a" org-agenda-span 3000)' > tmp_agenda.csv
+#+end_src
+
+** TODO Research how to enable org-agenda-log-mode for batch execution
+
+
+* Import into pandas as dataframe
+The macro ~org-batch-agenda-csv~ doesn't export the headers, so we must append that line to the front of the file. After several unsuccessful trials, we create a new file, write the headers and then append the previous export from emacs.
+
+#+begin_src python :session org-timeline-viewer
+with open('tmp_agenda_with_headers.csv', mode='wt', encoding='utf-8') as headerfile:
+  headers = 'category,head,type,todo,tags,date,time,extra,priority-l,priority-n,agenda-day\n'
+  headerfile.write(headers)
+  with open('tmp_agenda.csv', mode='r', encoding='utf-8') as datafile:
+    for line in datafile:
+      headerfile.write(line)
+#+end_src
+
+#+RESULTS:
+
+
+#+begin_src python :session org-timeline-viewer
+import pandas as pd
+timeline = pd.read_csv('tmp_agenda_with_headers.csv', parse_dates=(['date','agenda-day']),index_col=False)
+#+end_src
+
+#+RESULTS:
+
+Limitation: Dates must comply with ISO 8601 format. Right now, we can't add any kind of intervals for times or dates. Pandas will complain and it won't work.
+
+Org doesn't export end date by default, so we rename date as start_date, then add a day as save it as and end_date.
+
+#+begin_src python :session org-timeline-viewer
+timeline.set_index('head')
+timeline.rename(columns={'head':'heading','category':'orgfile','date':'start_date'}, inplace=True)
+timeline['end_date'] = timeline['start_date'] + pd.Timedelta(days=1)
+# TODO debug info to remove once this is settled down
+timeline.info()
+timeline.head()
+#+end_src
+
+#+RESULTS:
+:            orgfile                        heading            type  todo  tags  ...       extra priority-l priority-n  agenda-day   end_date
+: 0  timestamp-test1                    Closed task  past-scheduled  DONE  tag2  ...  Scheduled:        NaN       1099  2022-03-19 2022-03-20
+: 1  timestamp-test1                    Closed task       timestamp  DONE  tag2  ...         NaN        NaN       1000  2022-03-20 2022-03-21
+: 2  timestamp-test1              Previous deadline        deadline   NaN  tag2  ...   Deadline:        NaN       1000  2022-03-20 2022-03-21
+: 3  timestamp-test1  Awesome event with time block       timestamp   NaN   NaN  ...         NaN        NaN       1000  2022-03-22 2022-03-23
+: 4  timestamp-test1   Demo scheluded date with tag       scheduled  TODO  tag1  ...  Scheduled:        NaN       1099  2022-03-22 2022-03-23
+:
+: [5 rows x 12 columns]
+
+* Display a cool interactive visualization
+We will use python library plotly express to display a timeline that includes all given events. Visualization will open in a browser window.
+#+begin_src python :session org-timeline-viewer :exports both
+# From plotly documentation
+import plotly.express as px
+fig = px.timeline(timeline, x_start = 'start_date', x_end ='end_date' ,y = 'heading',
+              title='Org timeline viewer - 10 days',
+              hover_data=['heading','start_date'],
+              color='type')
+fig.update_xaxes(rangeslider_visible=True)
+fig.show()
+#+end_src
+
+#+RESULTS:
+: None
+
+* Output reference from org-mode 9.5.2 source code
+This is the output of ~org-batch-agenda-csv~ macro.
+
+#+begin_quote
+The output gives a line for each selected agenda item.  Each
+item is a list of comma-separated values, like this:
+
+category,head,type,todo,tags,date,time,extra,priority-l,priority-n
+
+category     The category of the item
+head         The headline, without TODO kwd, TAGS and PRIORITY
+type         The type of the agenda entry, can be
+                todo               selected in TODO match
+                tagsmatch          selected in tags match
+                diary              imported from diary
+                deadline           a deadline on given date
+                scheduled          scheduled on given date
+                timestamp          entry has timestamp on given date
+                closed             entry was closed on given date
+                upcoming-deadline  warning about deadline
+                past-scheduled     forwarded scheduled item
+                block              entry has date block including g. date
+todo         The todo keyword, if any
+tags         All tags including inherited ones, separated by colons
+date         The relevant date, like 2007-2-14
+time         The time, like 15:00-16:50
+extra        String with extra planning info
+priority-l   The priority letter if any was given
+priority-n   The computed numerical priority
+agenda-day   The day in the agenda where this is listed"
+#+end_quote
+
+* License
+This software is licensed under GPLv3 license.

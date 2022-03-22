@@ -1,0 +1,13 @@
+timestamp-test1,Closed task,past-scheduled,DONE,tag2,2022-3-19,,Scheduled:,,1099,2022-3-19
+timestamp-test1,Closed task,timestamp,DONE,tag2,2022-3-20,19:00......,,,1000,2022-3-20
+timestamp-test1,Previous deadline,deadline,,tag2,2022-3-20,23:59......,Deadline:,,1000,2022-3-20
+timestamp-test1,Awesome event with time block,timestamp,,,2022-3-22,22:00-23:30,,,1000,2022-3-22
+timestamp-test1,Demo scheluded date with tag,scheduled,TODO,tag1,2022-3-22,,Scheduled:,,1099,2022-3-22
+timestamp-test1,Previous deadline,deadline,,tag2,2022-3-20,,2 d. ago:,,1002,2022-3-22
+timestamp-test1,Future deadline with time,upcoming-deadline,,tag1:tag3,2022-3-22,,In   7 d.:,,993,2022-3-22
+timestamp-test1,Not very future deadline with WAIT keyword,upcoming-deadline,WAIT,tag1:tag3,2022-3-22,,In  12 d.:,,988,2022-3-22
+timestamp-test1,Future scheduled date,scheduled,,tag1,2022-3-23,,Scheduled:,,1099,2022-3-23
+timestamp-test1,Future deadline with time,deadline,,tag1:tag3,2022-3-29,13:00......,Deadline:,,1000,2022-3-29
+timestamp-test1,Not very future deadline with WAIT keyword,deadline,WAIT,tag1:tag3,2022-4-3,13:00......,Deadline:,,1000,2022-4-3
+timestamp-test1,Remote future appointment,timestamp,,tag1:tag4,2022-4-15,,,,1000,2022-4-15
+timestamp-test1,Far away scheduled date,scheduled,TODO,tag1,2022-4-21,,Scheduled:,,1099,2022-4-21

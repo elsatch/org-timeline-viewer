@@ -1,0 +1,24 @@
+* TODO Demo scheluded date with tag :tag1:
+SCHEDULED: <2022-03-22 mar>
+** Future scheduled date
+SCHEDULED: <2022-03-23 mié>
+** Future deadline with time :tag3:
+DEADLINE: <2022-03-29 mar 13:00>
+
+* DONE Closed task :tag2:
+SCHEDULED: <2022-03-19 sáb>
+CLOSED: <2022-03-20 dom 19:00>
+** Previous deadline
+DEADLINE: <2022-03-20 dom 23:59>
+* TODO Far away scheduled date :tag1:
+SCHEDULED: <2022-04-21 jue>
+** Remote future appointment :tag4:
+<2022-04-15 vie>
+** WAIT Not very future deadline with WAIT keyword :tag3:
+DEADLINE: <2022-04-03 dom 13:00>
+* Awesome event with time block
+<2022-03-22 mar 22:00-23:30>
+* Event with clock block
+:LOGBOOK:
+CLOCK: [2022-03-21 lun 21:00]--[2022-03-21 lun 23:00] =>  2:00
+:END:

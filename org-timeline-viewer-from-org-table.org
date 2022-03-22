@@ -1,0 +1,113 @@
+#+TITLE: Org Timeline Viewer from Org Tables
+* TL;DR
+To view the visualization you need Python 3 with python libraries pandas, plotly. You can install those using ~pip3 install pandas plotly~. Then you can evaluate all org-babel blocks doing C-c C-v C-b. Interactive graphic will appear on a browser window.
+
+* Insert test events from an Org-table
+
+In this example, we will insert all our data on an org-table and pass it as a variable to pandas. To make the example as simple as possible, we will use the minimal number of columns and use the same names as the export created by ~org-batch-agenda-csv~ macro.
+
+** Default timestamp dataset
+#+NAME:test1
+| category        | head                                       | type              | todo | tags      |      date |        time | extra      | priority-l | priority-n | agenda-day |
+| timestamp-test1 | Closed task                                | past-scheduled    | DONE | tag2      | 2022-3-19 |             | Scheduled: |            |       1099 |  2022-3-19 |
+| timestamp-test1 | Closed task                                | timestamp         | DONE | tag2      | 2022-3-20 | 19:00...... |            |            |       1000 |  2022-3-20 |
+| timestamp-test1 | Previous deadline                          | deadline          |      | tag2      | 2022-3-20 | 23:59...... | Deadline:  |            |       1000 |  2022-3-20 |
+| timestamp-test1 | Awesome event with time block              | timestamp         |      |           | 2022-3-22 | 22:00-23:30 |            |            |       1000 |  2022-3-22 |
+| timestamp-test1 | Demo scheluded date with tag               | scheduled         | TODO | tag1      | 2022-3-22 |             | Scheduled: |            |       1099 |  2022-3-22 |
+| timestamp-test1 | Previous deadline                          | deadline          |      | tag2      | 2022-3-20 |             | 2 d. ago:  |            |       1002 |  2022-3-22 |
+| timestamp-test1 | Future deadline with time                  | upcoming-deadline |      | tag1:tag3 | 2022-3-22 |             | In   7 d.: |            |        993 |  2022-3-22 |
+| timestamp-test1 | Not very future deadline with WAIT keyword | upcoming-deadline | WAIT | tag1:tag3 | 2022-3-22 |             | In  12 d.: |            |        988 |  2022-3-22 |
+| timestamp-test1 | Future scheduled date                      | scheduled         |      | tag1      | 2022-3-23 |             | Scheduled: |            |       1099 |  2022-3-23 |
+| timestamp-test1 | Future deadline with time                  | deadline          |      | tag1:tag3 | 2022-3-29 | 13:00...... | Deadline:  |            |       1000 |  2022-3-29 |
+| timestamp-test1 | Not very future deadline with WAIT keyword | deadline          | WAIT | tag1:tag3 |  2022-4-3 | 13:00...... | Deadline:  |            |       1000 |   2022-4-3 |
+| timestamp-test1 | Remote future appointment                  | timestamp         |      | tag1:tag4 | 2022-4-15 |             |            |            |       1000 |  2022-4-15 |
+| timestamp-test1 | Far away scheduled date                    | scheduled         | TODO | tag1      | 2022-4-21 |             | Scheduled: |            |       1099 |  2022-4-21 |
+
+
+* Import Org-tables into pandas
+After checking a [[https://stackoverflow.com/questions/67064546/elegant-way-to-read-emacs-org-mode-tables-into-a-python-pandas-dataframe/67064574#67064574][couple]] of Stack Overflow [[https://emacs.stackexchange.com/questions/63505/how-to-open-org-mode-table-as-a-pandas-dataframe-with-column-names][articles]], it seems quite simple to import a Org-table into pandas passing it as a variable to the pd.DataFrame function.
+
+Given we are not reading using pd.read_csv to read the CSV, we must convert date and agenda-day to dates manually.
+
+#+begin_src python :session org-timeline-viewer :var tbl=test1 :colnames no :hlines :results replace
+import pandas as pd
+timeline = pd.DataFrame(tbl[1:], columns=tbl[0])
+timeline['date'] = pd.to_datetime(timeline['date'])
+timeline['agenda-day'] = pd.to_datetime(timeline['agenda-day'])
+#+end_src
+
+#+RESULTS:
+
+Workaround: Org doesn't export end date, so we rename date as start_date, then add a day for the end_date.
+
+Limitation: Dates must comply with ISO 8601 format. Right now, we can't add any kind of intervals for times or dates. Pandas will complain and it won't work.
+
+#+begin_src python :session org-timeline-viewer
+timeline.set_index('head')
+timeline.rename(columns={'head':'heading','category':'orgfile','date':'start_date'}, inplace=True)
+timeline['end_date'] = timeline['start_date'] + pd.Timedelta(days=1)
+# TODO Debug output to be removed in the future
+timeline.head()
+#+end_src
+
+#+RESULTS:
+:            orgfile                        heading            type  todo  tags  ...       extra priority-l priority-n agenda-day   end_date
+: 0  timestamp-test1                    Closed task  past-scheduled  DONE  tag2  ...  Scheduled:                  1099 2022-03-19 2022-03-20
+: 1  timestamp-test1                    Closed task       timestamp  DONE  tag2  ...                              1000 2022-03-20 2022-03-21
+: 2  timestamp-test1              Previous deadline        deadline        tag2  ...   Deadline:                  1000 2022-03-20 2022-03-21
+: 3  timestamp-test1  Awesome event with time block       timestamp              ...                              1000 2022-03-22 2022-03-23
+: 4  timestamp-test1   Demo scheluded date with tag       scheduled  TODO  tag1  ...  Scheduled:                  1099 2022-03-22 2022-03-23
+:
+: [5 rows x 12 columns]
+
+* Display a cool interactive visualization
+We will use python library plotly express to display a timeline that includes all given events. Visualization will open in a browser window.
+
+#+begin_src python :session org-timeline-viewer :exports both
+# From plotly documentation
+import plotly.express as px
+fig = px.timeline(timeline, x_start = 'start_date', x_end ='end_date' ,y = 'heading',
+              title='Org timeline viewer - 10 days',
+              hover_data=['heading','start_date'],
+              color='type')
+fig.update_xaxes(rangeslider_visible=True)
+fig.show()
+#+end_src
+
+#+RESULTS:
+: None
+
+* Output reference from org-mode 9.5.2 source code
+This is the output of ~org-batch-agenda-csv~ macro.
+
+#+begin_quote
+The output gives a line for each selected agenda item.  Each
+item is a list of comma-separated values, like this:
+
+category,head,type,todo,tags,date,time,extra,priority-l,priority-n
+
+category     The category of the item
+head         The headline, without TODO kwd, TAGS and PRIORITY
+type         The type of the agenda entry, can be
+                todo               selected in TODO match
+                tagsmatch          selected in tags match
+                diary              imported from diary
+                deadline           a deadline on given date
+                scheduled          scheduled on given date
+                timestamp          entry has timestamp on given date
+                closed             entry was closed on given date
+                upcoming-deadline  warning about deadline
+                past-scheduled     forwarded scheduled item
+                block              entry has date block including g. date
+todo         The todo keyword, if any
+tags         All tags including inherited ones, separated by colons
+date         The relevant date, like 2007-2-14
+time         The time, like 15:00-16:50
+extra        String with extra planning info
+priority-l   The priority letter if any was given
+priority-n   The computed numerical priority
+agenda-day   The day in the agenda where this is listed"
+#+end_quote
+
+* License
+This software is licensed under GPLv3 license.
