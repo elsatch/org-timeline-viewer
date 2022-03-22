@@ -3,6 +3,8 @@ Org-timeline-viewer is an interactive timeline visualization generated from Org-
 
 Visualization is created using Python and external libraries like pandas and plotly. All the commands can be executed inside Org-babel blocks, or as an external script. The end result is an interactive graphic.
 
+![Demo image of org-timeline-viewer](images/org-timeline-viewer-demoscreen.png)
+
 # Getting started
 In order to generate the timeline, you need to provide a dataset that includes Org-mode timestamps.
 
