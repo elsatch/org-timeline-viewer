@@ -25,18 +25,9 @@ As starting point we will generate a view from the agenda, calling emacs in batc
 
 So, we pass all parameters unquoted.
 
-__DO NOT EXECUTE THIS CODE, DOESN'T WORK__
+This command extracts the to tmp_agenda.csv the items that appear on your org-agenda, when you press letter "a". _Make sure to define the full route to the timestamp-test1.org file or it will not work_
 #+begin_src shell :session org-timeline-viewer
-emacs -batch -l ~/.emacs.d/init.el -eval '(after! org (org-batch-agenda-csv "a" org-agenda-span 10 org-agenda-files "./timestamp-test1.org"))' > tmp_agenda.csv
-#+end_src
-
-#+RESULTS:
-|                         |
-| tmp_agenda.csv[?2004l |
-
-This command extracts the to tmp_agenda.csv the items that appear on your org-agenda, when you press letter "a".
-#+begin_src shell :session org-timeline-viewer :results none
-emacs -batch -l ~/.emacs.d/init.el -eval '(org-batch-agenda-csv "a" org-agenda-span 3000)' > tmp_agenda.csv
+emacs -batch -l ~/.emacs.d/init.el -eval '(org-batch-agenda-csv "a" org-agenda-span 3000 org-agenda-time-grid nil org-agenda-files (quote ("/Users/username/SET_YOUR_ROUTE/TO/org-timeline-viewer/timestamp-test1.org")))' > tmp_agenda.csv
 #+end_src
 
 ** TODO Research how to enable org-agenda-log-mode for batch execution
@@ -78,14 +69,12 @@ timeline.head()
 #+end_src
 
 #+RESULTS:
-:            orgfile                        heading            type  todo  tags  ...       extra priority-l priority-n  agenda-day   end_date
-: 0  timestamp-test1                    Closed task  past-scheduled  DONE  tag2  ...  Scheduled:        NaN       1099  2022-03-19 2022-03-20
-: 1  timestamp-test1                    Closed task       timestamp  DONE  tag2  ...         NaN        NaN       1000  2022-03-20 2022-03-21
-: 2  timestamp-test1              Previous deadline        deadline   NaN  tag2  ...   Deadline:        NaN       1000  2022-03-20 2022-03-21
-: 3  timestamp-test1  Awesome event with time block       timestamp   NaN   NaN  ...         NaN        NaN       1000  2022-03-22 2022-03-23
-: 4  timestamp-test1   Demo scheluded date with tag       scheduled  TODO  tag1  ...  Scheduled:        NaN       1099  2022-03-22 2022-03-23
-:
-: [5 rows x 12 columns]
+:            orgfile                       heading            type  todo  tags start_date   time       extra  priority-l  priority-n agenda-day   end_date
+: 0  timestamp-test1                   Closed task  past-scheduled  DONE  tag2 2022-03-19    NaN  Scheduled:         NaN        1099 2022-03-19 2022-03-20
+: 1  timestamp-test1             Previous deadline        deadline   NaN  tag2 2022-03-20  23:59   Deadline:         NaN        1000 2022-03-20 2022-03-21
+: 2  timestamp-test1                   Closed task       timestamp  DONE  tag2 2022-03-20  19:00         NaN         NaN        1000 2022-03-20 2022-03-21
+: 3  timestamp-test1  Demo scheluded date with tag       scheduled  TODO  tag1 2022-03-22    NaN  Scheduled:         NaN        1099 2022-03-22 2022-03-23
+: 4  timestamp-test1             Previous deadline        deadline   NaN  tag2 2022-03-20    NaN   2 d. ago:         NaN        1002 2022-03-22 2022-03-21
 
 * Display a cool interactive visualization
 We will use python library plotly express to display a timeline that includes all given events. Visualization will open in a browser window.
