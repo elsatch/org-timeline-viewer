@@ -1,0 +1,96 @@
+#+TITLE: Org Timeline Viewer from Org Tables - Test 2
+* TL;DR
+To view the visualization you need Python 3 with python libraries pandas, plotly. You can install those using ~pip3 install pandas plotly~. Then you can evaluate all org-babel blocks doing C-c C-v C-b. Interactive graphic will appear on a browser window.
+
+* Insert test events from an Org-table
+
+In this example, we will insert all our data on an org-table and pass it as a variable to pandas. To make the example as simple as possible, we will use the minimal number of columns and use the same names as the export created by ~org-batch-agenda-csv~ macro.
+
+** Test 2 timestamp dataset
+#+NAME:test2
+| date                   |  volume | notes           | liter_per_day | eur_day |
+| [2015-12-13 Sun 17:14] | 32.5809 | unclear history |               |         |
+| [2016-04-08 Fri 16:41] | 60.5927 | unclear history |           239 |         |
+| [2016-04-16 Sat 13:07] | 62.4217 | unclear history |           233 |         |
+| [2016-05-01 Sun 12:59] | 66.8509 |                 |           295 |         |
+| [2016-06-01 Wed 18:26] | 74.1914 |                 |           235 |         |
+| [2016-07-02 Sat 16:44] | 80.8214 |                 |           214 |         |
+| [2016-08-01 Mon 19:17] | 87.3304 |                 |           216 |         |
+
+** Org-table preparation
+Column names have been simplified.
+This line breaks the import: "|------------------------+---------+-----------------+---------------+---------+"
+So we delete it!
+
+
+* Import Org-tables into pandas
+After checking a [[https://stackoverflow.com/questions/67064546/elegant-way-to-read-emacs-org-mode-tables-into-a-python-pandas-dataframe/67064574#67064574][couple]] of Stack Overflow [[https://emacs.stackexchange.com/questions/63505/how-to-open-org-mode-table-as-a-pandas-dataframe-with-column-names][articles]], it seems quite simple to import a Org-table into pandas passing it as a variable to the pd.DataFrame function.
+
+Given we are not reading using pd.read_csv to read the CSV, we must convert date and agenda-day to dates manually.
+
+#+begin_src python :session org-timeline-viewer :var tbl=test2 :colnames no :hlines :results replace
+import pandas as pd
+timeline = pd.DataFrame(tbl[1:], columns=tbl[0])
+# Trying to use this function: timeline['date'] = pd.to_datetime(timeline['date'])
+# Returns dateutil.parser._parser.ParserError: Unknown string format: [2015-12-13 Sun 17:14]
+# Let's remove the brackets first
+timeline['date'] = timeline['date'].str.strip('[]')
+# Now, we can convert it to a datetime64 type
+timeline['date'] = pd.to_datetime(timeline['date'])
+timeline['date'].dtype
+#+end_src
+
+#+RESULTS:
+: datetime64[ns]
+
+Workaround: Org doesn't export end date, so we rename date as start_date, then add a day for the end_date.
+
+Limitation: Dates must comply with ISO 8601 format. Right now, we can't add any kind of intervals for times or dates. Pandas will complain and it won't work.
+
+#+begin_src python :session org-timeline-viewer
+timeline.rename(columns={'date':'start_date'}, inplace=True)
+timeline['end_date'] = timeline['start_date'] + pd.Timedelta(days=1)
+# TODO Debug output to be removed in the future
+timeline.head()
+#+end_src
+
+#+RESULTS:
+:            start_date   volume            notes liter_per_day eur_day            end_date
+: 0 2015-12-13 17:14:00  32.5809  unclear history                       2015-12-14 17:14:00
+: 1 2016-04-08 16:41:00  60.5927  unclear history           239         2016-04-09 16:41:00
+: 2 2016-04-16 13:07:00  62.4217  unclear history           233         2016-04-17 13:07:00
+: 3 2016-05-01 12:59:00  66.8509                            295         2016-05-02 12:59:00
+: 4 2016-06-01 18:26:00  74.1914                            235         2016-06-02 18:26:00
+
+* Display a cool interactive visualization
+We will use python library plotly express to display a timeline that includes all given events. Visualization will open in a browser window.
+
+#+begin_src python :session org-timeline-viewer :exports both
+# From plotly documentation
+import plotly.express as px
+fig = px.timeline(timeline, x_start = 'start_date', x_end ='end_date',y = 'volume',
+              title='Org timeline viewer - test2',
+              hover_data=['start_date','volume','liter_per_day'])
+fig.update_xaxes(rangeslider_visible=True)
+fig.show()
+#+end_src
+
+#+RESULTS:
+: None
+
+For your particular use case, it might make more sense to use a line graph:
+#+begin_src python :session org-timeline-viewer :exports both
+# From plotly documentation
+import plotly.express as px
+timeline = timeline.sort_values(by='start_date')
+fig = px.line(timeline, x = 'start_date', y = 'volume',
+              title='Volume per date - linegraph - test2',
+              hover_data=['start_date','volume','liter_per_day'], markers=True)
+fig.update_xaxes(rangeslider_visible=True)
+fig.show()
+#+end_src
+
+#+RESULTS:
+: None
+
+Or a combination of linegraph plus histogram such as https://plotly.com/python/time-series/#summarizing-timeseries-data-with-histograms
