@@ -25,7 +25,10 @@ As starting point we will generate a view from the agenda, calling emacs in batc
 
 So, we pass all parameters unquoted.
 
-This command extracts the to tmp_agenda.csv the items that appear on your org-agenda, when you press letter "a". _Make sure to define the full route to the timestamp-test1.org file or it will not work_
+This command extracts the to tmp_agenda.csv the items that appear on your org-agenda, when you press letter "a". 
+
+*Make sure to define the full route to the timestamp-test1.org file or it will not work*
+
 #+begin_src shell :session org-timeline-viewer
 emacs -batch -l ~/.emacs.d/init.el -eval '(org-batch-agenda-csv "a" org-agenda-span 3000 org-agenda-time-grid nil org-agenda-files (quote ("/Users/username/SET_YOUR_ROUTE/TO/org-timeline-viewer/timestamp-test1.org")))' > tmp_agenda.csv
 #+end_src
